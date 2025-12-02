@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Local LLM Chatbot - HuggingFace</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        h1 { 
+            font-size: 2em; 
+            margin-bottom: 8px;
+            font-weight: 300;
+        }
+        .subtitle {
+            opacity: 0.9;
+            font-weight: 300;
+            font-size: 0.9em;
+        }
+        .status {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            margin-top: 12px;
+            font-size: 0.8em;
+        }
+        .chat-area {
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            border-bottom: 1px solid #eee;
+        }
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+        .message.user { justify-content: flex-end; }
+        .message.bot .avatar { background: #667eea; }
+        .message.user .avatar { background: #764ba2; }
+        .avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 12px;
+            flex-shrink: 0;
+            font-size: 0.9em;
+        }
+        .message.user .avatar { margin-right: 0; margin-left: 12px; order: 2; }
+        .bubble {
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 75%;
+            line-height: 1.4;
+            font-size: 0.95em;
+        }
+        .message.bot .bubble {
+            background: #f0f2ff;
+            border-bottom-left-radius: 5px;
+        }
+        .message.user .bubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+        .input-area {
+            padding: 20px;
+            background: #f8f9ff;
+        }
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 12px 18px;
+            border: 2px solid #e0e4ff;
+            border-radius: 50px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        input:focus { border-color: #667eea; }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 0 25px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .mode-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            padding: 0 20px;
+            padding-top: 15px;
+            flex-wrap: wrap;
+        }
+        .mode-btn {
+            background: white;
+            border: 2px solid #e0e4ff;
+            color: #667eea;
+            padding: 6px 16px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.3s;
+        }
+        .mode-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+        .typing {
+            display: inline-block;
+            margin-left: 8px;
+        }
+        .typing span {
+            height: 6px;
+            width: 6px;
+            background: #667eea;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 1px;
+            opacity: 0.4;
+            animation: typing 1s infinite;
+        }
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 100% { opacity: 0.4; transform: translateY(0); }
+            50% { opacity: 1; transform: translateY(-4px); }
+        }
+        .model-info {
+            background: #e8f4ff;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin: 10px 20px;
+            font-size: 0.85em;
+            color: #2c5282;
+            text-align: center;
+        }
+        @media (max-width: 600px) {
+            .container { border-radius: 10px; }
+            header { padding: 20px; }
+            h1 { font-size: 1.6em; }
+            .chat-area { padding: 15px; height: 350px; }
+            .bubble { max-width: 85%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 Local LLM Chatbot</h1>
+            <div class="subtitle">HuggingFace Model • CPU Only • Port 8080</div>
+            <div class="status" id="status">Loading...</div>
+        </header>
+        
+        <div class="model-info" id="modelInfo">
+            Loading TinyLlama model from HuggingFace...
+        </div>
+        
+        <div class="mode-selector">
+            <button class="mode-btn active" onclick="setMode('echo')">Echo</button>
+            <button class="mode-btn" onclick="setMode('chat')">Chat</button>
+        </div>
+        
+        <div class="chat-area" id="chatArea">
+            <div class="message bot">
+                <div class="avatar">🤖</div>
+                <div class="bubble">
+                    Hello! I'm running locally on your laptop using HuggingFace models.<br><br>
+                    <strong>Note:</strong> First response may take 20-30 seconds while the model downloads and loads.
+                </div>
+            </div>
+        </div>
+        
+        <div class="input-area">
+            <div class="input-row">
+                <input type="text" id="messageInput" 
+                       placeholder="Type your message here..." 
+                       autocomplete="off"
+                       onkeypress="if(event.key === 'Enter') sendMessage()">
+                <button id="sendBtn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'echo';
+        let isProcessing = false;
+        
+        // Check health on load
+        fetch('/api/health')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('status').textContent = 
+                    `🟢 Ready | ${data.device || 'CPU'} Mode`;
+                document.getElementById('modelInfo').textContent = 
+                    `Model: ${data.device === 'cuda' ? 'GPU Accelerated' : 'CPU Optimized'}`;
+            })
+            .catch(err => {
+                document.getElementById('status').textContent = '🔴 Not Ready';
+                document.getElementById('modelInfo').textContent = 'Failed to connect to backend';
+            });
+        
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.toLowerCase().includes(mode)) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            addMessage('bot', `Switched to ${mode} mode.` + 
+                (mode === 'chat' ? ' First request will load the model (20-30 sec).' : ''));
+        }
+        
+        function addMessage(sender, text) {
+            const chatArea = document.getElementById('chatArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar';
+            avatar.textContent = sender === 'bot' ? '🤖' : '👤';
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.textContent = text;
+            
+            if (sender === 'user') {
+                messageDiv.appendChild(bubble);
+                messageDiv.appendChild(avatar);
+            } else {
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(bubble);
+            }
+            
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        
+        function showTyping() {
+            const chatArea = document.getElementById('chatArea');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message bot';
+            typingDiv.id = 'typingIndicator';
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar';
+            avatar.textContent = '🤖';
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.innerHTML = 'Thinking<span class="typing"><span></span><span></span><span></span></span>';
+            
+            typingDiv.appendChild(avatar);
+            typingDiv.appendChild(bubble);
+            chatArea.appendChild(typingDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        
+        function removeTyping() {
+            const typing = document.getElementById('typingIndicator');
+            if (typing) typing.remove();
+        }
+        
+        async function sendMessage() {
+            if (isProcessing) return;
+            
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            // Add user message
+            addMessage('user', message);
+            input.value = '';
+            
+            // Show typing indicator
+            showTyping();
+            isProcessing = true;
+            document.getElementById('sendBtn').disabled = true;
+            
+            try {
+                const endpoint = currentMode === 'echo' ? '/api/echo' : '/api/chat';
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: message })
+                });
+                
+                const data = await response.json();
+                
+                // Remove typing indicator
+                removeTyping();
+                
+                // Add bot response
+                if (data.error) {
+                    addMessage('bot', `Error: ${data.error}`);
+                } else {
+                    addMessage('bot', data.reply);
+                }
+            } catch (error) {
+                removeTyping();
+                addMessage('bot', `Network error: ${error.message}`);
+            } finally {
+                isProcessing = false;
+                document.getElementById('sendBtn').disabled = false;
+                input.focus();
+            }
+        }
+        
+        // Initialize
+        document.getElementById('messageInput').focus();
+    </script>
+</body>
+</html>
