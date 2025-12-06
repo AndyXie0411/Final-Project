@@ -54,9 +54,11 @@ Requires ~4GB RAM during inference and no chat history storage.
 <img width="2552" height="1308" alt="image" src="https://github.com/user-attachments/assets/f69b5049-9947-44e9-8e0c-e90ddfbedf28" />
 ## Validation/tests performed and outcomes.
 Could say hi and answered back, also answered some fun questions too.
+
 # 6) What’s Next
 ## Planned improvements, refactors, and stretch features.
 Maybe try to find another larger model that could do more things for us.
+
 # 7) Links (Required)
 GitHub Repo: https://github.com/AndyXie0411/Final-Project
 Public Cloud App (optional): http://localhost:8080/
