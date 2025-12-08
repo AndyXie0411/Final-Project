@@ -7,7 +7,6 @@ app = Flask(__name__)
 
 MODEL_NAME = os.environ.get("HF_MODEL_NAME", "TinyLlama/TinyLlama-1.1B-Chat-v1.0")
 
-# Load tokenizer + model
 print("Loading model...")
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, cache_dir=os.environ.get("TRANSFORMERS_CACHE"))
 model = AutoModelForCausalLM.from_pretrained(
@@ -38,7 +37,6 @@ def chat():
 
     answer = tokenizer.decode(output[0], skip_special_tokens=True)
 
-    # Extract only the assistant part
     if "<|assistant|>" in answer:
         answer = answer.split("<|assistant|>")[-1].strip()
 
