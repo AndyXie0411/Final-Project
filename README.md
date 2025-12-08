@@ -23,7 +23,7 @@ HuggingFace Transformers 4.35.0
 Flask 2.3.2
 Docker with Python 3.11-slim base
 
-# 3) How to Run (Local)
+# 3) How to Run
 ## Choose Docker or Apptainer and provide a single command:
 Docker
 ## build
